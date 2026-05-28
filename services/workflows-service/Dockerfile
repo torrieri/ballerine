@@ -12,7 +12,10 @@ ENV SHORT_SHA=${SHORT_SHA}
 
 COPY ./package.json .
 
-RUN npm install --legacy-peer-deps
+RUN npm config set fetch-retry-maxtimeout 600000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retries 5 && \
+    npm install --legacy-peer-deps
 
 COPY . .
 

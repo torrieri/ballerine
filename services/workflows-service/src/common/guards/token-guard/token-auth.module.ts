@@ -34,7 +34,7 @@ import { PasswordService } from '@/auth/password/password.service';
 import { SalesforceIntegrationRepository } from '@/salesforce/salesforce-integration.repository';
 import { NotionService } from '@/notion/notion.service';
 import { FileRepository } from '@/storage/storage.repository';
-import { HttpModule, HttpService } from '@nestjs/axios';
+import { HttpModule } from '@nestjs/axios';
 import { WorkflowRuntimeDataActorService } from '@/workflow/workflow-runtime-data-actor.service';
 import { AssessmentsService } from '@/assessments/assessments.service';
 import { UnifiedApiClient } from '@/common/utils/unified-api-client/unified-api-client';

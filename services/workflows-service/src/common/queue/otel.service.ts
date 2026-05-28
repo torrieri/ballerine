@@ -17,6 +17,7 @@ export class QueueOtelService implements OnModuleInit {
     try {
       if (!env.OTEL_ENABLED) {
         this.logger.log('OpenTelemetry for BullMQ is disabled');
+
         return;
       }
 

@@ -35,6 +35,7 @@ export class QueueService implements OnModuleDestroy {
   ) {
     this.shouldProcessJobs = this.determineIfShouldProcessJobs();
     this.logger.log(`Queue worker mode: ${this.shouldProcessJobs ? 'ENABLED' : 'DISABLED'}`);
+
     if (env.QUEUE_SYSTEM_ENABLED) {
       this.initRedisConnection();
     }
@@ -131,6 +132,7 @@ export class QueueService implements OnModuleDestroy {
       this.logger.debug(
         `Skipping worker registration for queue ${queueName} (not a worker instance)`,
       );
+
       return null;
     }
 
@@ -209,6 +211,7 @@ export class QueueService implements OnModuleDestroy {
           pattern: existingScheduler.pattern,
           every: existingScheduler.every,
         });
+
         return existingScheduler;
       }
 

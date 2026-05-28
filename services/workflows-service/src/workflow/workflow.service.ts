@@ -331,9 +331,11 @@ export class WorkflowService {
 
       return assessments?.flatMap(assessment => assessment.individualVerificationsChecks) ?? [];
     } catch (error) {
-      if (!(error instanceof NotFoundException)) {
-        throw error;
-      }
+      this.logger.warn(
+        `Failed to fetch individual verification checks for workflow ${workflowRuntimeDataId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
 
       return [];
     }

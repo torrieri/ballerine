@@ -238,6 +238,7 @@ export class MerchantMonitoringClient {
       return FindManyReportsResponseSchema.parse(response.data);
     } catch (error) {
       console.error('Error fetching reports from Unified API:', error);
+
       if (env.ENVIRONMENT_NAME === 'development' || env.ENVIRONMENT_NAME === 'local') {
         return {
           totalItems: 0,
@@ -245,6 +246,7 @@ export class MerchantMonitoringClient {
           data: [],
         };
       }
+
       throw error;
     }
   }
@@ -271,9 +273,11 @@ export class MerchantMonitoringClient {
       return response.data ?? [];
     } catch (error) {
       console.error('Error fetching findings from Unified API:', error);
+
       if (env.ENVIRONMENT_NAME === 'development' || env.ENVIRONMENT_NAME === 'local') {
         return [];
       }
+
       throw error;
     }
   }
@@ -317,6 +321,7 @@ export class MerchantMonitoringClient {
       return MetricsResponseSchema.parse(response.data);
     } catch (error) {
       console.error('Error fetching metrics from Unified API:', error);
+
       if (env.ENVIRONMENT_NAME === 'development' || env.ENVIRONMENT_NAME === 'local') {
         return {
           riskLevelCounts: { low: 0, medium: 0, high: 0, critical: 0 },
@@ -327,6 +332,7 @@ export class MerchantMonitoringClient {
           removedWebsitesCount: 0,
         };
       }
+
       throw error;
     }
   }

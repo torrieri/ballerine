@@ -212,29 +212,41 @@ export class MerchantMonitoringClient {
     withoutExampleReports?: boolean;
     searchQuery?: string;
   }) {
-    const response = await axios.get(`${env.UNIFIED_API_URL}/external/tld`, {
-      params: {
-        customerId,
-        ...(businessId && { merchantId: businessId }),
-        limit,
-        from,
-        to,
-        riskLevels,
-        page,
-        statuses,
-        findings,
-        isAlert,
-        withoutUnpublishedOngoingReports,
-        withoutExampleReports,
-        ...(searchQuery && { searchQuery }),
-        ...(reportType && { reportType }),
-      },
-      headers: {
-        Authorization: `Bearer ${env.UNIFIED_API_TOKEN}`,
-      },
-    });
+    try {
+      const response = await axios.get(`${env.UNIFIED_API_URL}/external/tld`, {
+        params: {
+          customerId,
+          ...(businessId && { merchantId: businessId }),
+          limit,
+          from,
+          to,
+          riskLevels,
+          page,
+          statuses,
+          findings,
+          isAlert,
+          withoutUnpublishedOngoingReports,
+          withoutExampleReports,
+          ...(searchQuery && { searchQuery }),
+          ...(reportType && { reportType }),
+        },
+        headers: {
+          Authorization: `Bearer ${env.UNIFIED_API_TOKEN}`,
+        },
+      });
 
-    return FindManyReportsResponseSchema.parse(response.data);
+      return FindManyReportsResponseSchema.parse(response.data);
+    } catch (error) {
+      console.error('Error fetching reports from Unified API:', error);
+      if (env.ENVIRONMENT_NAME === 'development' || env.ENVIRONMENT_NAME === 'local') {
+        return {
+          totalItems: 0,
+          totalPages: 0,
+          data: [],
+        };
+      }
+      throw error;
+    }
   }
 
   public async count({ customerId, noExample }: { customerId: string; noExample?: boolean }) {
@@ -249,13 +261,21 @@ export class MerchantMonitoringClient {
   }
 
   public async listFindings() {
-    const response = await this.axios.get('external/findings', {
-      headers: {
-        Authorization: `Bearer ${env.UNIFIED_API_TOKEN}`,
-      },
-    });
+    try {
+      const response = await this.axios.get('external/findings', {
+        headers: {
+          Authorization: `Bearer ${env.UNIFIED_API_TOKEN}`,
+        },
+      });
 
-    return response.data ?? [];
+      return response.data ?? [];
+    } catch (error) {
+      console.error('Error fetching findings from Unified API:', error);
+      if (env.ENVIRONMENT_NAME === 'development' || env.ENVIRONMENT_NAME === 'local') {
+        return [];
+      }
+      throw error;
+    }
   }
 
   public async updateStatus({
@@ -282,17 +302,32 @@ export class MerchantMonitoringClient {
     from?: string;
     to?: string;
   }) {
-    const response = await this.axios.get('merchants/analysis/metrics', {
-      params: {
-        customerId,
-        from,
-        to,
-      },
-      headers: {
-        Authorization: `Bearer ${env.UNIFIED_API_TOKEN}`,
-      },
-    });
+    try {
+      const response = await this.axios.get('merchants/analysis/metrics', {
+        params: {
+          customerId,
+          from,
+          to,
+        },
+        headers: {
+          Authorization: `Bearer ${env.UNIFIED_API_TOKEN}`,
+        },
+      });
 
-    return MetricsResponseSchema.parse(response.data);
+      return MetricsResponseSchema.parse(response.data);
+    } catch (error) {
+      console.error('Error fetching metrics from Unified API:', error);
+      if (env.ENVIRONMENT_NAME === 'development' || env.ENVIRONMENT_NAME === 'local') {
+        return {
+          riskLevelCounts: { low: 0, medium: 0, high: 0, critical: 0 },
+          violationCounts: [],
+          activeBusinessesCount: 0,
+          activeWebsitesCount: 0,
+          addedWebsitesCount: 0,
+          removedWebsitesCount: 0,
+        };
+      }
+      throw error;
+    }
   }
 }

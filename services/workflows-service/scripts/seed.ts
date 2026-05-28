@@ -968,7 +968,7 @@ async function seed() {
   );
 
   await client.$transaction(async tx => {
-    businessRiskIds.map(async (id, index) => {
+    const promises1 = businessRiskIds.map(async (id, index) => {
       const riskWf = async () => ({
         runtimeId: `test-workflow-risk-id-${index}`,
         workflowDefinitionId: riskScoreMachineKybId,
@@ -979,7 +979,7 @@ async function seed() {
         projectId: project1.id,
       });
 
-      return client.business.create({
+      return tx.business.create({
         data: generateBusiness({
           id,
           workflow: await riskWf(),
@@ -988,7 +988,7 @@ async function seed() {
       });
     });
 
-    businessIds.map(async id => {
+    const promises2 = businessIds.map(async id => {
       const exampleWf = {
         workflowDefinitionId: onboardingMachineKybId,
         workflowDefinitionVersion: manualMachineVersion,
@@ -998,7 +998,7 @@ async function seed() {
         createdAt: faker.date.recent(2),
       };
 
-      return client.business.create({
+      return tx.business.create({
         data: generateBusiness({
           id,
           workflow: exampleWf,
@@ -1006,6 +1006,8 @@ async function seed() {
         }),
       });
     });
+
+    await Promise.all([...promises1, ...promises2]);
   });
 
   await seedTransactionsAlerts(client, {
@@ -1020,9 +1022,9 @@ async function seed() {
     agentUserIds: agentUsers.map(({ id }) => id),
   });
 
-  await client.$transaction(async () =>
-    endUserIds.map(async (id, index) =>
-      client.endUser.create({
+  await client.$transaction(async tx => {
+    const promises = endUserIds.map(async (id, index) =>
+      tx.endUser.create({
         /// I tried to fix that so I can run through ajv, currently it doesn't like something in the schema (anyOf  )
         data: generateEndUser({
           id,
@@ -1036,8 +1038,9 @@ async function seed() {
           connectBusinesses: Math.random() > 0.5,
         }),
       }),
-    ),
-  );
+    );
+    await Promise.all(promises);
+  });
 
   void client.$disconnect();
 

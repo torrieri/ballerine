@@ -13,7 +13,7 @@ export const ProjectIds = createParamDecorator((data: unknown, ctx: ExecutionCon
   const isUnauthorizedProjectIds =
     !!requestedProjectIds &&
     requestedProjectIds.length > 0 &&
-    !requestedProjectIds.some(projectId => !userAssociatedProjectIds.includes(projectId));
+    requestedProjectIds.some(projectId => !userAssociatedProjectIds.includes(projectId));
   const notAdmin = !(authenticatedEntity.type === 'admin');
 
   if (isUnauthorizedProjectIds && notAdmin) {

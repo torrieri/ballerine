@@ -42,14 +42,19 @@ export class WorkflowTokenService {
       );
 
       let collectionFlow;
-      const [uiDefinition, customer] = await Promise.all([
-        this.uiDefinitionService.getByWorkflowDefinitionId(
+      let uiDefinition;
+
+      try {
+        uiDefinition = await this.uiDefinitionService.getByWorkflowDefinitionId(
           workflowDefinitionId,
           UiDefinitionContext.collection_flow,
           [projectId],
-        ),
-        this.customerService.getByProjectId(projectId),
-      ]);
+        );
+      } catch (error) {
+        // UI definition is optional or missing
+      }
+
+      const customer = await this.customerService.getByProjectId(projectId);
 
       try {
         collectionFlow = buildCollectionFlowState({

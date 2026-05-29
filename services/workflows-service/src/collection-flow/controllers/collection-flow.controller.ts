@@ -29,6 +29,12 @@ import { ApiExcludeController } from '@nestjs/swagger';
 import { CollectionFlowMissingException } from '../exceptions/collection-flow-missing.exception';
 import { CollectionFlowStateService } from '../services/collection-flow-state.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { fileFilter } from '@/storage/file-filter';
+import { getDiskStorage } from '@/storage/get-file-storage-manager';
+import { StorageService } from '@/storage/storage.service';
+import { getFileMetadata } from '@/common/get-file-metadata/get-file-metadata';
 
 @UseWorkflowAuthGuard()
 @ApiExcludeController()
@@ -42,7 +48,45 @@ export class CollectionFlowController {
     protected readonly endUserService: EndUserService,
     protected readonly collectionFlowStateService: CollectionFlowStateService,
     protected readonly prismaService: PrismaService,
+    protected readonly storageService: StorageService,
   ) {}
+
+  @common.Post('/files')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: getDiskStorage(),
+      fileFilter,
+    }),
+  )
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @TokenScope() tokenScope: ITokenScope,
+  ) {
+    if (!file) {
+      throw new common.BadRequestException('No file provided');
+    }
+
+    const fileLink = await this.storageService.createFileLink({
+      uri: file.path,
+      fileNameOnDisk: file.path,
+      fileName: file.originalname,
+      userId: '',
+      projectId: tokenScope.projectId,
+      mimeType:
+        file.mimetype ||
+        (
+          await getFileMetadata({
+            file: file.originalname || '',
+            fileName: file.originalname || '',
+          })
+        )?.mimeType ||
+        'image/jpeg',
+    });
+
+    return {
+      id: fileLink.id,
+    };
+  }
 
   @common.Get('/customer')
   async getCustomer(@TokenScope() tokenScope: ITokenScope) {
@@ -156,12 +200,14 @@ export class CollectionFlowController {
   }
 
   @common.Post('/final-submission')
-  async finalSubmission(@TokenScope() tokenScope: ITokenScope, @common.Body() body: FinishFlowDto) {
+  async finalSubmission(@TokenScope() tokenScope: ITokenScope, @common.Body() body: any) {
     try {
-      const { eventName, context } = body;
+      const eventName = body?.eventName || 'USER_NEXT_STEP';
+      const context = body?.context || body || {};
 
-      const collectionFlowState = (context.collectionFlow as AnyRecord)
-        .state as TCollectionFlowState;
+      const collectionFlowState = context?.collectionFlow
+        ? ((context.collectionFlow as AnyRecord).state as TCollectionFlowState)
+        : null;
 
       if (collectionFlowState?.status === CollectionFlowStatusesEnum.edit) {
         const pluginsOutput = this.collectionFlowService.removePluginsOutput({
@@ -186,20 +232,20 @@ export class CollectionFlowController {
         tokenScope.projectId,
       );
 
-      await this.collectionFlowStateService.updateCollectionFlowState(
-        tokenScope.workflowRuntimeDataId,
-        {
-          ...((context.collectionFlow as AnyRecord).state as TCollectionFlowState),
-          steps: ((context.collectionFlow as AnyRecord).state as TCollectionFlowState).steps.map(
-            (step: TCollectionFlowStep) => ({
+      if (collectionFlowState) {
+        await this.collectionFlowStateService.updateCollectionFlowState(
+          tokenScope.workflowRuntimeDataId,
+          {
+            ...collectionFlowState,
+            steps: collectionFlowState.steps.map((step: TCollectionFlowStep) => ({
               ...step,
               state: CollectionFlowStepStatesEnum.completed,
-            }),
-          ),
-          status: CollectionFlowStatusesEnum.completed,
-        },
-        [tokenScope.projectId],
-      );
+            })),
+            status: CollectionFlowStatusesEnum.completed,
+          },
+          [tokenScope.projectId],
+        );
+      }
 
       return this.workflowService.event(
         {
